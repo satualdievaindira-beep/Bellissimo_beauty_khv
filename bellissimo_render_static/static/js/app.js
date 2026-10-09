@@ -1,0 +1,24 @@
+(function () {
+'use strict';
+var html=document.documentElement; html.classList.remove('no-js'); html.classList.add('js');
+var toggle=document.querySelector('.nav-toggle'), nav=document.getElementById('nav');
+function closeMenu(){if(!nav||!toggle)return;nav.classList.remove('open');toggle.setAttribute('aria-expanded','false');}
+if(toggle&&nav){toggle.addEventListener('click',function(){var open=nav.classList.toggle('open');toggle.setAttribute('aria-expanded',String(open));});nav.addEventListener('click',function(e){if(e.target.closest('a'))closeMenu();});document.addEventListener('keydown',function(e){if(e.key==='Escape')closeMenu();});}
+var chips=document.querySelectorAll('.chip[data-filter]'), blocks=document.querySelectorAll('.price-block');
+chips.forEach(function(chip){chip.addEventListener('click',function(){var key=chip.getAttribute('data-filter');chips.forEach(function(c){c.classList.toggle('active',c===chip);});blocks.forEach(function(b){b.hidden=key!=='all'&&b.getAttribute('data-cat')!==key;});});});
+var form=document.getElementById('booking-form'); if(!form)return;
+var service=document.getElementById('service'), day=document.getElementById('day'), time=document.getElementById('time'), nameInput=document.getElementById('name'), comment=document.getElementById('comment'), preview=document.getElementById('preview');
+var salon=form.getAttribute('data-salon')||'Bellissimo Beauty Salon', phone='996550402057';
+var MONTHS=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+var WEEKDAYS=['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+function formatDate(v){var p=v.split('-');if(p.length!==3)return '';var d=new Date(Number(p[0]),Number(p[1])-1,Number(p[2]));return isNaN(d.getTime())?'':d.getDate()+' '+MONTHS[d.getMonth()]+', '+WEEKDAYS[d.getDay()];}
+function clean(v,max){return (v||'').trim().replace(/\s+/g,' ').slice(0,max);}
+function message(){var opt=service.options[service.selectedIndex];var price=opt&&opt.getAttribute('data-price')?' ('+opt.getAttribute('data-price')+')':'';var lines=['Здравствуйте! Хочу записаться в '+salon+'.','Услуга: '+(service.value?opt.getAttribute('data-name')+price:'...'),'Дата: '+(formatDate(day.value)||'...'),'Время: '+(time.value||'...')];var n=clean(nameInput.value,60),c=clean(comment.value,200);if(n)lines.push('Имя: '+n);if(c)lines.push('Комментарий: '+c);lines.push('Подтвердите, пожалуйста, запись.');return lines.join('\n');}
+function updatePreview(){preview.textContent=message();}
+[service,day,time,nameInput,comment].forEach(function(el){el.addEventListener('input',updatePreview);el.addEventListener('change',updatePreview);});
+document.querySelectorAll('.pick[data-service]').forEach(function(link){link.addEventListener('click',function(e){e.preventDefault();service.value=link.getAttribute('data-service');updatePreview();var target=document.getElementById('booking'),reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;target.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});window.setTimeout(function(){(day.value?time:day).focus({preventScroll:true});},450);});});
+form.addEventListener('submit',function(e){e.preventDefault();var problem='';var today=new Date();today.setHours(0,0,0,0);var chosen=day.value?new Date(day.value+'T00:00:00'):null;if(!service.value)problem='Выберите услугу.';else if(!day.value)problem='Выберите дату.';else if(chosen&&chosen<today)problem='Нельзя записаться на прошедшую дату.';else if(chosen&&chosen>new Date(today.getTime()+60*86400000))problem='Запись открыта на 60 дней вперёд.';else if(!time.value)problem='Выберите время.';if(!problem&&chosen&&chosen.getTime()===today.getTime()){var now=new Date(),[h,m]=time.value.split(':').map(Number);if(h*60+m<now.getHours()*60+now.getMinutes())problem='Это время уже прошло. Выберите более позднее.';}
+if(problem){var box=form.querySelector('.errors');if(!box){box=document.createElement('div');box.className='errors';box.setAttribute('role','alert');form.insertBefore(box,form.firstChild);}box.textContent='';var p=document.createElement('p');p.textContent=problem;box.appendChild(p);box.scrollIntoView({behavior:'smooth',block:'center'});return;}var url='https://wa.me/'+phone+'?text='+encodeURIComponent(message());window.location.href=url;});
+var q=new URLSearchParams(window.location.search),pre=q.get('service');if(pre){service.value=pre;updatePreview();document.getElementById('booking').scrollIntoView({behavior:'smooth'});}
+var year=document.getElementById('year');if(year)year.textContent=new Date().getFullYear();updatePreview();
+})();
